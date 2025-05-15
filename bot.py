@@ -3,8 +3,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 import requests
 
 # جایگزین کن با توکن ربات خودت و API key سایت ocr.space
-BOT_TOKEN = '7829054927:AAEdh4zeYyWnRd0NOTWzgFGty8-3JPiL_Tc'
-OCR_API_KEY = 'K89209186988957'
+BOT_TOKEN = ''
+OCR_API_KEY = ''
 
 keyboard = [['ارسال عکس']]
 markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
