@@ -1,46 +1,53 @@
 import requests
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-API_KEY_OCR = 'K89209186988957'
-TELEGRAM_TOKEN = '7829054927:AAEdh4zeYyWnRd0NOTWzgFGty8-3JPiL_Tc'
+# جایگزین کن با API KEY سایت OCR.space
+OCR_API_KEY = 'K89209186988957'
 
-def ocr_space_file(filename, api_key):
-    with open(filename, 'rb') as f:
-        r = requests.post(
+# جایگزین کن با توکن ربات تلگرام خودت
+BOT_TOKEN = '7829054927:AAEdh4zeYyWnRd0NOTWzgFGty8-3JPiL_Tc'
+
+# تابع استخراج متن از تصویر با استفاده از OCR.space
+def ocr_space_image(file_path, api_key):
+    with open(file_path, 'rb') as f:
+        response = requests.post(
             'https://api.ocr.space/parse/image',
-            files={filename: f},
-            data={'apikey': api_key}
+            files={'filename': f},
+            data={'apikey': api_key, 'language': 'fas'}
         )
-    result = r.json()
-    if result.get("ParsedResults"):
-        return result["ParsedResults"][0].get("ParsedText", "متنی یافت نشد.")
-    else:
-        return "خطا در استخراج متن."
+    result = response.json()
+    try:
+        return result['ParsedResults'][0]['ParsedText']
+    except:
+        return "خطا در پردازش تصویر."
 
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [KeyboardButton("ارسال عکس")]
-    ]
+# فرمان /start و کیبورد
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[KeyboardButton("ارسال عکس")]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    update.message.reply_text('سلام! لطفاً عکس خود را ارسال کنید تا متن آن استخراج شود.', reply_markup=reply_markup)
+    await update.message.reply_text("سلام! لطفاً روی دکمه زیر کلیک کنید و یک عکس ارسال کنید.", reply_markup=reply_markup)
 
-def handle_photo(update: Update, context: CallbackContext):
-    photo_file = update.message.photo[-1].get_file()
-    photo_file.download('photo.jpg')
+# هندل عکس
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    photo = update.message.photo[-1]
+    file = await photo.get_file()
+    file_path = "received_image.jpg"
+    await file.download_to_drive(file_path)
 
-    text = ocr_space_file('photo.jpg', API_KEY_OCR)
-    update.message.reply_text(f"متن استخراج شده:\n{text}")
+    await update.message.reply_text("در حال پردازش تصویر...")
 
+    text = ocr_space_image(file_path, OCR_API_KEY)
+    await update.message.reply_text(f"متن استخراج‌شده:\n{text}")
+
+# تابع اصلی اجرای ربات
 def main():
-    updater = Updater(TELEGRAM_TOKEN)
-    dp = updater.dispatcher
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    updater.start_polling()
-    updater.idle()
+    app.run_polling()
 
-if __name__ == '__main__':
+if name == "main":
     main()
